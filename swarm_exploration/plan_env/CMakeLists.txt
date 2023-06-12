@@ -1,3 +1,4 @@
+set(CMAKE_CXX_STANDARD 14)
 cmake_minimum_required(VERSION 2.8.3)
 project(plan_env)
 
@@ -60,6 +61,10 @@ add_library( plan_env
     src/map_ros.cpp
     src/multi_map_manager.cpp
     )
+    
+add_dependencies(plan_env
+    plan_env_generate_messages_cpp) 
+
 target_link_libraries( plan_env
     ${catkin_LIBRARIES} 
     ${PCL_LIBRARIES}
@@ -68,5 +73,6 @@ target_link_libraries( plan_env
 add_executable(obj_generator
     src/obj_generator.cpp 
     )
+      
 target_link_libraries(obj_generator 
     ${catkin_LIBRARIES})

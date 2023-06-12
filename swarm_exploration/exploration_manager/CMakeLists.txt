@@ -1,3 +1,4 @@
+set(CMAKE_CXX_STANDARD 14)
 cmake_minimum_required(VERSION 2.8.3)
 project(exploration_manager)
 
@@ -64,6 +65,10 @@ add_executable(exploration_node
   src/fast_exploration_fsm.cpp
   src/fast_exploration_manager.cpp
   )
+ 
+add_dependencies(exploration_node
+	exploration_manager_generate_messages_cpp) 
+  
 target_link_libraries(exploration_node 
   ${catkin_LIBRARIES}
   -ldw

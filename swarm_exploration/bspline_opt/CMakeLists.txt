@@ -1,3 +1,4 @@
+set(CMAKE_CXX_STANDARD 14)
 cmake_minimum_required(VERSION 2.8.3)
 project(bspline_opt)
 
@@ -7,6 +8,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall")
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.7 REQUIRED)
+find_package(NLopt REQUIRED)
+set(NLopt_INCLUDE_DIRS ${NLOPT_INCLUDE_DIR})
+
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -15,8 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   plan_env
   active_perception
-  cv_bridge
-  nlopt
+  cv_bridge 
+   
 )
 
 catkin_package(
@@ -32,12 +36,14 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${Eigen3_INCLUDE_DIRS} 
     ${PCL_INCLUDE_DIRS}
+    ${NLOPT_INCLUDE_DIR}
 )
 
 add_library( bspline_opt 
     src/bspline_optimizer.cpp 
     )
 target_link_libraries( bspline_opt
-    ${catkin_LIBRARIES} 
-    # /usr/local/lib/libnlopt.so
+    ${catkin_LIBRARIES}
+    ${NLOPT_LIBRARIES}
+    #usr/local/lib/libnlopt.so
     )  

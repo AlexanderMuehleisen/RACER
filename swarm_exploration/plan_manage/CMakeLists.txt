@@ -1,3 +1,4 @@
+set(CMAKE_CXX_STANDARD 14)
 cmake_minimum_required(VERSION 2.8.3)
 project(plan_manage)
 
@@ -22,6 +23,9 @@ find_package(catkin REQUIRED COMPONENTS
   traj_utils
   active_perception
   cv_bridge
+  nav_msgs
+  trajectory_msgs
+  mav_msgs
 )
 
 
@@ -60,6 +64,10 @@ target_link_libraries(plan_manage ${catkin_LIBRARIES})
 
 add_executable(traj_server src/traj_server.cpp)
 target_link_libraries(traj_server ${catkin_LIBRARIES} -ldw)
+
+add_executable(traj_server_two src/traj_server_two.cpp)
+target_link_libraries(traj_server_two ${catkin_LIBRARIES} -ldw)
+
 # add_dependencies(traj_server ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 # benchmark node

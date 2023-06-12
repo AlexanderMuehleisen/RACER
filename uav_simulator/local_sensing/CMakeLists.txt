@@ -1,3 +1,4 @@
+set(CMAKE_CXX_STANDARD 14)
 PROJECT(local_sensing_node)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
 SET(CMAKE_BUILD_TYPE Release) # Release, RelWithDebInfo
