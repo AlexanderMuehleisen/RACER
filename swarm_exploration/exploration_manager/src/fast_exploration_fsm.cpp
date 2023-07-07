@@ -726,7 +726,9 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   if (tn - state1.recent_attempt_time_ < fp_->attempt_interval_) return;
 
   int select_id = -1;
+  int select_id2 = -1;
   double max_interval = -1.0;
+  double max_interval2 = -1.0;
   for (int i = 0; i < states.size(); ++i) {
     if (i + 1 <= getId()) continue;
     // Check if have communication recently
@@ -739,15 +741,34 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
     if (states[i].grid_ids_.size() + state1.grid_ids_.size() == 0) continue;
 
     double interval = tn - states[i].recent_interact_time_;
-    if (interval <= max_interval) continue;
+    if (interval <= max_interval2) continue;
+    
+    if (interval >= max_interval){
+    // update best choice and set previously best choice to second best 
+    select_id2 = select_id;
+    max_interval2 = max_interval;
+    
     select_id = i + 1;
     max_interval = interval;
+    } else {
+    // update second best choice 
+    select_id2 = i +1;
+    max_interval2 = interval;
+    }
+
   }
   if (select_id == -1) return;
-
+   
   std::cout << "\nSelect: " << select_id << std::endl;
   ROS_WARN("Pair opt %d & %d", getId(), select_id);
-
+  ROS_WARN("Pair opt %d with %d and %d", getId(), select_id, select_id2);
+  
+  //vector<int> first_ids1, second_ids1, first_ids2, second_ids2;
+  //auto t1 = ros::Time::now();
+  //vector<int> ego_ids, other_ids;
+  //auto& state2 = states[select_id - 1];
+  
+  ROS_WARN("Case 1" );
   // Do pairwise optimization with selected drone, allocate the union of their domiance grids
   unordered_map<int, char> opt_ids_map;
   auto& state2 = states[select_id - 1];
@@ -770,9 +791,53 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   opt_ids.insert(opt_ids.end(), missed.begin(), missed.end());
 
   // Do partition of the grid
-  vector<Eigen::Vector3d> positions = { state1.pos_, state2.pos_ };
-  vector<Eigen::Vector3d> velocities = { Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0) };
+  vector<Eigen::Vector3d> positions = { state1.pos_, state2.pos_};
+  vector<Eigen::Vector3d> velocities = { Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0,0,0)};
   vector<int> first_ids1, second_ids1, first_ids2, second_ids2;
+  if (state_ != WAIT_TRIGGER) {
+    expl_manager_->hgrid_->getConsistentGrid(
+        state1.grid_ids_, state1.grid_ids_, first_ids1, second_ids1);
+    expl_manager_->hgrid_->getConsistentGrid(
+        state2.grid_ids_, state2.grid_ids_, first_ids2, second_ids2);
+}
+
+  auto t1 = ros::Time::now();
+
+  vector<int> ego_ids, other_ids;
+  expl_manager_->allocateGrids(positions, velocities, { first_ids1, first_ids2},
+      { second_ids1, second_ids2 }, opt_ids, ego_ids, other_ids); 
+  
+  /*
+  // Test multiple opt
+  ROS_WARN("Case2");
+  // Do pairwise optimization with selected drone, allocate the union of their domiance grids
+  // unordered_map<int, char> opt_ids_map;
+  //auto& state2 = states[select_id - 1];
+  auto& state3 = states[select_id2 -1];
+  //for (auto id : state1.grid_ids_) opt_ids_map[id] = 1;
+  //for (auto id : state2.grid_ids_) opt_ids_map[id] = 1;
+  for (auto id : state3.grid_ids_) opt_ids_map[id] = 1;
+  //vector<int> opt_ids;
+  opt_ids.clear();
+  for (auto pair : opt_ids_map) opt_ids.push_back(pair.first);
+
+  std::cout << "Pair Opt id: ";
+  for (auto id : opt_ids) std::cout << id << ", ";
+  std::cout << "" << std::endl;
+
+  // Find missed grids to reallocated them
+  //vector<int> actives, missed;
+  //expl_manager_->hgrid_->getActiveGrids(actives);
+  //findUnallocated(actives, missed);
+  //std::cout << "Missed: ";
+  //for (auto id : missed) std::cout << id << ", ";
+  //std::cout << "" << std::endl;
+  opt_ids.insert(opt_ids.end(), missed.begin(), missed.end());
+
+  // Do partition of the grid
+  vector<Eigen::Vector3d> positions2 = { state1.pos_, state2.pos_, state3.pos_ };
+  vector<Eigen::Vector3d> velocities2 = { Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0,0,0)};
+  vector<int> first_ids3, second_ids3;
   if (state_ != WAIT_TRIGGER) {
     expl_manager_->hgrid_->getConsistentGrid(
         state1.grid_ids_, state1.grid_ids_, first_ids1, second_ids1);
@@ -780,12 +845,63 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
         state2.grid_ids_, state2.grid_ids_, first_ids2, second_ids2);
   }
 
-  auto t1 = ros::Time::now();
+  //auto t1 = ros::Time::now();
+  ROS_WARN("Test");
 
-  vector<int> ego_ids, other_ids;
-  expl_manager_->allocateGrids(positions, velocities, { first_ids1, first_ids2 },
-      { second_ids1, second_ids2 }, opt_ids, ego_ids, other_ids);
+  //vector<int> ego_ids, other_ids;
+  expl_manager_->allocateGrids2(positions2, velocities2, { first_ids1, first_ids2, first_ids3 },
+      { second_ids1, second_ids2, second_ids3 }, opt_ids, ego_ids, other_ids); 
+  }
+  
+  */
+  
+  
+  // -------------------------------------------------------------------------------------------
+  // Test multiple opt
+  
+  // Do pairwise optimization with selected drone, allocate the union of their domiance grids
+  /*
+  auto& state3 = states[select_id2 - 1];
+  for (auto id : state3.grid_ids_) opt_ids_map[id] = 1;
+  for (auto pair : opt_ids_map) opt_ids.push_back(pair.first);
 
+  std::cout << "Pair Opt id: ";
+  for (auto id : opt_ids) std::cout << id << ", ";
+  std::cout << "" << std::endl;
+
+  // Find missed grids to reallocated them
+  expl_manager_->hgrid_->getActiveGrids(actives);
+  findUnallocated(actives, missed);
+  std::cout << "Missed: ";
+  for (auto id : missed) std::cout << id << ", ";
+  std::cout << "" << std::endl;
+  opt_ids.insert(opt_ids.end(), missed.begin(), missed.end());
+
+  // Do partition of the grid
+  vector<Eigen::Vector3d> positions2 = { state1.pos_, state2.pos_, state3.pos_ };
+  vector<Eigen::Vector3d> velocities2 = { Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0),     
+  	Eigen::Vector3d(0,0,0) };
+  vector<int> first_ids3, second_ids3;
+  if (state_ != WAIT_TRIGGER) {
+    expl_manager_->hgrid_->getConsistentGrid(
+        state1.grid_ids_, state1.grid_ids_, first_ids1, second_ids1);
+    expl_manager_->hgrid_->getConsistentGrid(
+        state2.grid_ids_, state2.grid_ids_, first_ids2, second_ids2);
+    expl_manager_->hgrid_->getConsistentGrid(
+        state3.grid_ids_, state3.grid_ids_, first_ids3, second_ids3); 
+  }
+
+  //auto t1 = ros::Time::now();
+  ROS_WARN("Test");
+  
+  expl_manager_->allocateGrids2(positions2, velocities2, { first_ids1, first_ids2, first_ids3 },
+  { second_ids1, second_ids2, second_ids3 }, opt_ids, ego_ids, other_ids);  */
+  
+  // -------------------------------------------------------------------------------------
+     
+      
+  
+      
   double alloc_time = (ros::Time::now() - t1).toSec();
 
   std::cout << "Ego1  : ";
@@ -851,6 +967,10 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   ed->pair_opt_stamp_ = opt.stamp;
   ed->wait_response_ = true;
   state1.recent_attempt_time_ = tn;
+  
+  
+  // Test multiple optimization
+  
 }
 
 void FastExplorationFSM::findUnallocated(const vector<int>& actives, vector<int>& missed) {
