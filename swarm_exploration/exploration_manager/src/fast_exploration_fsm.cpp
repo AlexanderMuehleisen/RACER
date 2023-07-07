@@ -807,8 +807,9 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   expl_manager_->allocateGrids(positions, velocities, { first_ids1, first_ids2},
       { second_ids1, second_ids2 }, opt_ids, ego_ids, other_ids); 
   
-  /*
+  
   // Test multiple opt
+  if (select_id2 != -1){
   ROS_WARN("Case2");
   // Do pairwise optimization with selected drone, allocate the union of their domiance grids
   // unordered_map<int, char> opt_ids_map;
@@ -817,13 +818,13 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   //for (auto id : state1.grid_ids_) opt_ids_map[id] = 1;
   //for (auto id : state2.grid_ids_) opt_ids_map[id] = 1;
   for (auto id : state3.grid_ids_) opt_ids_map[id] = 1;
-  //vector<int> opt_ids;
-  opt_ids.clear();
-  for (auto pair : opt_ids_map) opt_ids.push_back(pair.first);
+  vector<int> opt_ids2;
+  //opt_ids.clear();
+  for (auto pair : opt_ids_map) opt_ids2.push_back(pair.first);
 
-  std::cout << "Pair Opt id: ";
-  for (auto id : opt_ids) std::cout << id << ", ";
-  std::cout << "" << std::endl;
+  //std::cout << "Pair Opt id: ";
+  //for (auto id : opt_ids) std::cout << id << ", ";
+  //std::cout << "" << std::endl;
 
   // Find missed grids to reallocated them
   //vector<int> actives, missed;
@@ -846,14 +847,24 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   }
 
   //auto t1 = ros::Time::now();
-  ROS_WARN("Test");
 
-  //vector<int> ego_ids, other_ids;
+
+  vector<int> ego_ids2;
+  vector<pair<int, vector<int>>> other_ids2;
   expl_manager_->allocateGrids2(positions2, velocities2, { first_ids1, first_ids2, first_ids3 },
-      { second_ids1, second_ids2, second_ids3 }, opt_ids, ego_ids, other_ids); 
+      { second_ids1, second_ids2, second_ids3 }, opt_ids2, ego_ids2, other_ids2); 
+      
+  // print other_ids2
+  std::cout << "other_ids2: ";
+  for (auto line : other_ids2) {
+     std::cout << "drone_id: " << line.first << "  ";
+     for (auto entry : line.second){
+          std::cout << entry << "  ";
+        }
+        std::cout << std::endl;
+    }    
   }
   
-  */
   
   
   // -------------------------------------------------------------------------------------------

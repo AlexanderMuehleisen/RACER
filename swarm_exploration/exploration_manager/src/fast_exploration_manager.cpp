@@ -867,7 +867,7 @@ void FastExplorationManager::allocateGrids(const vector<Eigen::Vector3d>& positi
 void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& positions,
     const vector<Eigen::Vector3d>& velocities, const vector<vector<int>>& first_ids,
     const vector<vector<int>>& second_ids, const vector<int>& grid_ids, vector<int>& ego_ids,
-    vector<int>& other_ids) {
+    vector< pair<int, vector<int>> >& other_ids) {
   // ROS_INFO("Allocate grid.");
 
   auto t1 = ros::Time::now();
@@ -1002,13 +1002,12 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
     ROS_ERROR("Fail to solve ACVRP.");
     return;
   }
-  // system("/home/boboyu/software/LKH-3.0.6/LKH
-  // /home/boboyu/workspaces/hkust_swarm_ws/src/swarm_exploration/utils/lkh_mtsp_solver/resource/amtsp3_1.par");
+
 
   double mtsp_time = (ros::Time::now() - t1).toSec();
   std::cout << "Allocation time: " << mtsp_time << std::endl;
  
- /*
+ 
   // Read results
   t1 = ros::Time::now();
 
@@ -1038,26 +1037,35 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
       tour.push_back(id);
     }
   }
-  // // Print tour ids
-  // for (auto tr : tours) {
-  //   std::cout << "tour: ";
-  //   for (auto id : tr) std::cout << id << ", ";
-  //   std::cout << "" << std::endl;
-  // }
-
+  
+  // Print tour ids
+  for (auto tr : tours) {
+    std::cout << "tour: ";
+    for (auto id : tr) std::cout << id << ", ";
+    std::cout << "" << std::endl;
+  } 
+  
+  int drone_id;
+  vector<int> route;
   for (int i = 1; i < tours.size(); ++i) {
-    if (tours[i][0] == 1) {
+    drone_id = tours[i][0];
+    route =  {tours[i].begin() + 1, tours[i].end()};
+    if (drone_id == 1) {
       ego_ids.insert(ego_ids.end(), tours[i].begin() + 1, tours[i].end());
     } else {
-      other_ids.insert(other_ids.end(), tours[i].begin() + 1, tours[i].end());
+      other_ids.push_back(std::make_pair(drone_id, route));
     }
   }
+  
   for (auto& id : ego_ids) {
     id = grid_ids[id - 1 - drone_num];
   }
-  for (auto& id : other_ids) {
-    id = grid_ids[id - 1 - drone_num];
+  for (auto& line : other_ids) {
+  	for (auto& id : line.second){
+  	id = grid_ids[id -1 - drone_num];
+  	}
   }
+  
   // // Remove repeated grid
   // unordered_map<int, int> ego_map, other_map;
   // for (auto id : ego_ids) ego_map[id] = 1;
@@ -1071,7 +1079,7 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
   // sort(ego_ids.begin(), ego_ids.end());
   // sort(other_ids.begin(), other_ids.end());
   
-  */
+ 
 }
 
 double FastExplorationManager::computeGridPathCost(const Eigen::Vector3d& pos,
