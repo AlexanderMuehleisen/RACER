@@ -10,6 +10,7 @@ using std::string;
 std::string mtsp_dir1_;
 std::string mtsp_dir2_;
 std::string mtsp_dir3_;
+std::string mtsp_dir4_;
 int drone_id_, problem_id_;
 
 bool mtspCallback(
@@ -22,6 +23,9 @@ bool mtspCallback(
   else if (req.prob == 3) {
     // solveMTSPWithLKH3(mtsp_dir3_.c_str());
     string cmd = "/usr/local/bin/LKH " + mtsp_dir3_;
+    system(cmd.c_str());}
+  else if (req.prob == 4){
+    string cmd = "/usr/local/bin/LKH " + mtsp_dir4_;
     system(cmd.c_str());
   }
 
@@ -42,6 +46,7 @@ int main(int argc, char** argv) {
   mtsp_dir1_ = mtsp_dir + "/amtsp_" + std::to_string(drone_id_) + ".par";
   mtsp_dir2_ = mtsp_dir + "/amtsp2_" + std::to_string(drone_id_) + ".par";
   mtsp_dir3_ = mtsp_dir + "/amtsp3_" + std::to_string(drone_id_) + ".par";
+  mtsp_dir4_ = mtsp_dir + "/amtsp4_" + std::to_string(drone_id_) + ".par";
 
   string service_name;
   if (problem_id_ == 1) {  // TSP
