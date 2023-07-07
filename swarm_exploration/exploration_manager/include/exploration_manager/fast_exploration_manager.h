@@ -44,6 +44,11 @@ public:
       const vector<Eigen::Vector3d>& velocities, const vector<vector<int>>& first_ids,
       const vector<vector<int>>& second_ids, const vector<int>& grid_ids, vector<int>& ego_ids,
       vector<int>& other_ids);
+      
+  void allocateGrids2(const vector<Eigen::Vector3d>& positions,
+      const vector<Eigen::Vector3d>& velocities, const vector<vector<int>>& first_ids,
+      const vector<vector<int>>& second_ids, const vector<int>& grid_ids, vector<int>& ego_ids,
+      vector<int>& other_ids);
 
   // Find optimal tour visiting unknown grid
   bool findGlobalTourOfGrid(const vector<Eigen::Vector3d>& positions,
