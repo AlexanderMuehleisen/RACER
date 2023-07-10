@@ -808,51 +808,80 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
       { second_ids1, second_ids2 }, opt_ids, ego_ids, other_ids); 
   
   
+  
+  
+  
   // Test multiple opt
   if (select_id2 != -1){
   ROS_WARN("Case2");
-  // Do pairwise optimization with selected drone, allocate the union of their domiance grids
-  // unordered_map<int, char> opt_ids_map;
-  //auto& state2 = states[select_id - 1];
-  auto& state3 = states[select_id2 -1];
-  //for (auto id : state1.grid_ids_) opt_ids_map[id] = 1;
-  //for (auto id : state2.grid_ids_) opt_ids_map[id] = 1;
-  for (auto id : state3.grid_ids_) opt_ids_map[id] = 1;
+  vector<int> selected_ids{select_id, select_id2};
+  
+  // Do multiple optimization with selected drones, allocate the union of their domiance grids
+  unordered_map<int, char> opt_ids_map2;
+  vector<Eigen::Vector3d> positions2, velocities2;
+  vector<vector<int>> first_ids(selected_ids.size()), second_ids(selected_ids.size());
+  
+  // fill vectors drone 1 (ego)
+  positions2.push_back(state1.pos_);
+  velocities2.push_back(Eigen::Vector3d(0, 0,0));
+  for (auto id : state1.grid_ids_) opt_ids_map2[id] = 1; 
+  
+  // fill vectors interacting drones
+  for (auto id : selected_ids) { 
+    positions2.push_back(states[id-1].pos_);
+    velocities2.push_back(Eigen::Vector3d(0,0,0));
+    for (auto id : states[id-1].grid_ids_) opt_ids_map[id] = 1; 
+  }
+  
+  // union of domiance girds of interacting drones
   vector<int> opt_ids2;
-  //opt_ids.clear();
   for (auto pair : opt_ids_map) opt_ids2.push_back(pair.first);
+  
 
   //std::cout << "Pair Opt id: ";
   //for (auto id : opt_ids) std::cout << id << ", ";
   //std::cout << "" << std::endl;
 
   // Find missed grids to reallocated them
-  //vector<int> actives, missed;
-  //expl_manager_->hgrid_->getActiveGrids(actives);
-  //findUnallocated(actives, missed);
+  vector<int> actives2, missed2;
+  expl_manager_->hgrid_->getActiveGrids(actives2);
+  findUnallocated(actives2, missed2);
   //std::cout << "Missed: ";
-  //for (auto id : missed) std::cout << id << ", ";
+  //for (auto id : missed2) std::cout << id << ", ";
   //std::cout << "" << std::endl;
-  opt_ids.insert(opt_ids.end(), missed.begin(), missed.end());
+  opt_ids2.insert(opt_ids2.end(), missed2.begin(), missed2.end());
 
   // Do partition of the grid
-  vector<Eigen::Vector3d> positions2 = { state1.pos_, state2.pos_, state3.pos_ };
-  vector<Eigen::Vector3d> velocities2 = { Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0,0,0)};
-  vector<int> first_ids3, second_ids3;
+  //vector<Eigen::Vector3d> positions2 = { state1.pos_, state2.pos_, state3.pos_ };
+  // vector<Eigen::Vector3d> velocities2 = { Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0,0,0)};
+  //vector<int> first_ids3, second_ids3;
+  
+  // drone 1 (ego)
+  vector<int> first_ids1, second_ids1;
   if (state_ != WAIT_TRIGGER) {
     expl_manager_->hgrid_->getConsistentGrid(
         state1.grid_ids_, state1.grid_ids_, first_ids1, second_ids1);
-    expl_manager_->hgrid_->getConsistentGrid(
-        state2.grid_ids_, state2.grid_ids_, first_ids2, second_ids2);
   }
+  // other drones
+  vector<int> first_ids2, second_ids2;
+  for (auto id : selected_ids){
+    if (state_ != WAIT_TRIGGER) {
+      expl_manager_->hgrid_->getConsistentGrid(
+        states[id-1].grid_ids_, states[id-1].grid_ids_, first_ids1, second_ids1);
+    }
+    first_ids.push_back(first_ids2);
+    second_ids.push_back(second_ids2);
+    first_ids2.clear();
+    second_ids2.clear();
+  }
+   
 
   //auto t1 = ros::Time::now();
 
-
-  vector<int> ego_ids2;
+  vector<int> ego_ids2, first_ids3, second_ids3;
   vector<pair<int, vector<int>>> other_ids2;
-  expl_manager_->allocateGrids2(positions2, velocities2, { first_ids1, first_ids2, first_ids3 },
-      { second_ids1, second_ids2, second_ids3 }, opt_ids2, ego_ids2, other_ids2); 
+  expl_manager_->allocateGrids2(positions2, velocities2, first_ids,
+      second_ids, opt_ids2, ego_ids2, other_ids2);  
       
   // print other_ids2
   std::cout << "other_ids2: ";
