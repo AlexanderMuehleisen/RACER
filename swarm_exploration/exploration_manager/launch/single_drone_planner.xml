@@ -124,8 +124,8 @@
     <param name="fsm/wait_delete_duration" value="0.05" type="double"/>
     <param name="fsm/gain_thresh" value="10" type="int"/>
 
-    <param name="fsm/attempt_interval" value="0.1" type="double"/>
-    <param name="fsm/pair_opt_interval" value="0.5" type="double"/>
+    <param name="fsm/attempt_interval" value="0.05" type="double"/>
+    <param name="fsm/pair_opt_interval" value="0.1" type="double"/>
 
     <param name="partitioning/min_unknown" value="4000" type="int"/>;
     <param name="partitioning/min_frontier" value="100" type="int"/>;
@@ -191,7 +191,7 @@
     <param name="manager/max_acc" value="$(arg max_acc)" type="double"/>
     <param name="manager/max_jerk" value="4" type="double"/>
     <param name="manager/dynamic_environment" value="0" type="int"/>
-    <param name="manager/local_segment_length" value="6.0" type="double"/>
+    <param name="manager/local_segment_length" value="2.0" type="double"/>
     <param name="manager/clearance_threshold" value="0.2" type="double"/>
     <param name="manager/control_points_distance" value="0.5" type="double"/>
     <param name="manager/use_geometric_path" value="true" type="bool"/>

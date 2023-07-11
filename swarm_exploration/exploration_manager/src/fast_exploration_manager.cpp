@@ -872,8 +872,7 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
     vector< pair<int, vector<int>> >& other_ids) {
   // ROS_INFO("Allocate grid.");
   
-  ROS_ERROR("1");
-
+  
   auto t1 = ros::Time::now();
   auto t2 = t1;
   
@@ -900,7 +899,6 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
   // uniform_grid_->getCostMatrix(positions, velocities, prev_first_ids, grid_ids, mat);
   hgrid_->getCostMatrix(positions, velocities, first_ids, second_ids, grid_ids, mat);
   
-  ROS_ERROR("Test2");
 
   // int unknown = hgrid_->getTotalUnknwon();
   int unknown;
