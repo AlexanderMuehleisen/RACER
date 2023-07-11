@@ -38,6 +38,7 @@ add_message_files(
   GridTour.msg
   OtherIds.msg
   PairOpt2.msg
+  MultipleOptConsensus.msg
 )
 
 generate_messages(
