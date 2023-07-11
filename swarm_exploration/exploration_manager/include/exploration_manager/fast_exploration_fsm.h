@@ -11,6 +11,8 @@
 #include <exploration_manager/DroneState.h>
 #include <exploration_manager/PairOpt.h>
 #include <exploration_manager/PairOptResponse.h>
+#include <exploration_manager/PairOpt2.h>
+#include <exploration_manager/OtherIds.h>
 #include <bspline/Bspline.h>
 
 #include <algorithm>
@@ -89,7 +91,7 @@ private:
 
   // Swarm state
   ros::Publisher drone_state_pub_, opt_pub_, opt_res_pub_, swarm_traj_pub_, grid_tour_pub_,
-      hgrid_pub_;
+      hgrid_pub_, opt_test;
   ros::Subscriber drone_state_sub_, opt_sub_, opt_res_sub_, swarm_traj_sub_;
   ros::Timer drone_state_timer_, opt_timer_, swarm_traj_timer_;
 };

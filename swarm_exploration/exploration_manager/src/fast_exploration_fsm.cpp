@@ -7,6 +7,8 @@
 #include <exploration_manager/expl_data.h>
 #include <exploration_manager/HGrid.h>
 #include <exploration_manager/GridTour.h>
+#include <exploration_manager/PairOpt2.h>
+#include <exploration_manager/OtherIds.h>
 
 #include <plan_env/edt_environment.h>
 #include <plan_env/sdf_map.h>
@@ -16,7 +18,7 @@
 // #include <active_perception/uniform_grid.h>
 // #include <lkh_tsp_solver/lkh_interface.h>
 // #include <lkh_mtsp_solver/lkh3_interface.h>
-
+#include <algorithm>
 #include <fstream>
 
 using Eigen::Vector4d;
@@ -89,6 +91,8 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
 
   hgrid_pub_ = nh.advertise<exploration_manager::HGrid>("/swarm_expl/hgrid_send", 10);
   grid_tour_pub_ = nh.advertise<exploration_manager::GridTour>("/swarm_expl/grid_tour_send", 10);
+  
+  opt_test = nh.advertise<exploration_manager::PairOpt2>("swarm_expl/test", 10);
 }
 
 int FastExplorationFSM::getId() {
@@ -994,13 +998,32 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   for (int i = 0; i < fp_->repeat_send_num_; ++i) opt_pub_.publish(opt);
 
   ROS_WARN("Drone %d send opt request to %d, pair opt t: %lf, allocate t: %lf", getId(), select_id,
-      ros::Time::now().toSec() - tn, alloc_time);
+      ros::Time::now().toSec() - tn, alloc_time); 
+      
+  // Test send result multiple opt 
+  exploration_manager::PairOpt2 opt2;
+  opt2.from_drone_id = getId();
+  for (auto id : selected_ids) opt2.to_drone_ids.push_back(id);
+  opt2.stamp = tn;
+  for (auto id : ego_ids) opt2.ego_ids.push_back(id);
+  
+  exploration_manager::OtherIds other;
+  for (auto i : other_ids) {
+    other.to_drone_id = selected_ids[i.first-2];
+    for (auto id : i.second) other.grid_ids.push_back(id);
+    opt2.other_ids.push_back(other);
+    other.grid_ids.clear();
+  }
+  for (int i = 0; i < fp_->repeat_send_num_; ++i) opt_test.publish(opt2);
+  
+   
+  
 
   // Reserve the result and wait...
   auto ed = expl_manager_->ed_;
   ed->ego_ids_ = ego_ids;
   ed->other_ids_ = other_ids[0].second;
-  ed->pair_opt_stamp_ = opt.stamp;
+  ed->pair_opt_stamp_ = opt2.stamp;
   ed->wait_response_ = true;
   state1.recent_attempt_time_ = tn;
   
@@ -1031,8 +1054,14 @@ void FastExplorationFSM::findUnallocated(const vector<int>& actives, vector<int>
   }
 }
 
+// TODO
+
 void FastExplorationFSM::optMsgCallback(const exploration_manager::PairOptConstPtr& msg) {
-  if (msg->from_drone_id == getId() || msg->to_drone_id != getId()) return;
+  // check if recieved msg is addressed to oneself (check if ego id is present in to_drone_ids)
+  // check if recieved msg is not send from oneself 
+  //bool is_present = std::find(msg->to_drone_ids.begin(), msg -> to_drone_ids.end(), getId()) !=
+  //                 msg-> to_drone_ids.end();
+  if (msg->from_drone_id == getId() || msg -> to_drone_id != getId()) return;
 
   // Check stamp to avoid unordered/repeated msg
   if (msg->stamp <= expl_manager_->ed_->pair_opt_stamps_[msg->from_drone_id - 1] + 1e-4) return;
@@ -1043,7 +1072,7 @@ void FastExplorationFSM::optMsgCallback(const exploration_manager::PairOptConstP
 
   // auto tn = ros::Time::now().toSec();
   exploration_manager::PairOptResponse response;
-  response.from_drone_id = msg->to_drone_id;
+  response.from_drone_id = getId();
   response.to_drone_id = msg->from_drone_id;
   response.stamp = msg->stamp;  // reply with the same stamp for verificaiton
 
