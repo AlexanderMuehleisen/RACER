@@ -67,10 +67,12 @@ void FastExplorationManager::initialize(ros::NodeHandle& nh) {
   ed_->swarm_state_.resize(ep_->drone_num_);
   ed_->pair_opt_stamps_.resize(ep_->drone_num_);
   ed_->pair_opt_res_stamps_.resize(ep_->drone_num_);
+  ed_->multiple_opt_consensus_stamps_.resize(ep_->drone_num_);
   for (int i = 0; i < ep_->drone_num_; ++i) {
     ed_->swarm_state_[i].stamp_ = 0.0;
     ed_->pair_opt_stamps_[i] = 0.0;
     ed_->pair_opt_res_stamps_[i] = 0.0;
+    ed_->multiple_opt_consensus_stamps_[i] = 0.0;
   }
   planner_manager_->swarm_traj_data_.init(ep_->drone_id_, ep_->drone_num_);
 
@@ -869,6 +871,8 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
     const vector<vector<int>>& second_ids, const vector<int>& grid_ids, vector<int>& ego_ids,
     vector< pair<int, vector<int>> >& other_ids) {
   // ROS_INFO("Allocate grid.");
+  
+  ROS_ERROR("1");
 
   auto t1 = ros::Time::now();
   auto t2 = t1;
@@ -895,6 +899,8 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
   Eigen::MatrixXd mat;
   // uniform_grid_->getCostMatrix(positions, velocities, prev_first_ids, grid_ids, mat);
   hgrid_->getCostMatrix(positions, velocities, first_ids, second_ids, grid_ids, mat);
+  
+  ROS_ERROR("Test2");
 
   // int unknown = hgrid_->getTotalUnknwon();
   int unknown;

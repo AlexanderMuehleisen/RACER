@@ -13,6 +13,7 @@
 #include <exploration_manager/PairOptResponse.h>
 #include <exploration_manager/PairOpt2.h>
 #include <exploration_manager/OtherIds.h>
+#include <exploration_manager/MultipleOptConsensus.h>
 #include <bspline/Bspline.h>
 
 #include <algorithm>
@@ -69,11 +70,11 @@ private:
   void droneStateTimerCallback(const ros::TimerEvent& e);
   void droneStateMsgCallback(const exploration_manager::DroneStateConstPtr& msg);
   void optTimerCallback(const ros::TimerEvent& e);
-  void optMsgCallback(const exploration_manager::PairOptConstPtr& msg);
+  void optMsgCallback(const exploration_manager::PairOpt2ConstPtr& msg);
   void optResMsgCallback(const exploration_manager::PairOptResponseConstPtr& msg);
   void swarmTrajCallback(const bspline::BsplineConstPtr& msg);
   void swarmTrajTimerCallback(const ros::TimerEvent& e);
-
+  void optConsensusMsgCallback(const exploration_manager::MultipleOptConsensusConstPtr& msg);
   /* planning utils */
   shared_ptr<FastPlannerManager> planner_manager_;
   shared_ptr<FastExplorationManager> expl_manager_;
@@ -90,9 +91,9 @@ private:
   ros::Publisher replan_pub_, new_pub_, bspline_pub_;
 
   // Swarm state
-  ros::Publisher drone_state_pub_, opt_pub_, opt_res_pub_, swarm_traj_pub_, grid_tour_pub_,
+  ros::Publisher drone_state_pub_, opt_pub_, opt_res_pub_, opt_consensus_pub_, swarm_traj_pub_, grid_tour_pub_,
       hgrid_pub_, opt_test;
-  ros::Subscriber drone_state_sub_, opt_sub_, opt_res_sub_, swarm_traj_sub_;
+  ros::Subscriber drone_state_sub_, opt_sub_, opt_res_sub_, opt_consensus_sub_, swarm_traj_sub_;
   ros::Timer drone_state_timer_, opt_timer_, swarm_traj_timer_;
 };
 

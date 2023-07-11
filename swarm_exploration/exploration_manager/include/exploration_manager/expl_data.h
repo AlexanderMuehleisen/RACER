@@ -84,8 +84,11 @@ struct ExplorationData {
 
   // Swarm, other drones' state
   vector<DroneState> swarm_state_;
-  vector<double> pair_opt_stamps_, pair_opt_res_stamps_;
+  vector<double> pair_opt_stamps_, pair_opt_res_stamps_, multiple_opt_consensus_stamps_;
   vector<int> ego_ids_, other_ids_;
+  vector<pair<int, vector<int>>> other_ids2_;
+  vector<bool> multiple_opt_consensus_;
+  vector<int> selected_ids_;
   double pair_opt_stamp_;
   bool reallocated_, wait_response_;
 

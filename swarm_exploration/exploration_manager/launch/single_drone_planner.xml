@@ -38,6 +38,8 @@
     <remap from="/swarm_expl/pair_opt_res_recv" to="/swarm_expl/pair_opt_res" />
     <remap from="/swarm_expl/grid_tour_send" to="/swarm_expl/grid_tour" />
     <remap from="/swarm_expl/hgrid_send" to="/swarm_expl/hgrid" />
+    <remap from="/swarm_expl/multiple_opt_cons_send" to= "swarm_expl/multiple_opt_cons" />
+    <remap from="/swarm_expl/multiple_opt_cons_recv" to= "swarm_expl/multiple_opt_cons" />
     <remap from="/multi_map_manager/chunk_stamps_send" to="/multi_map_manager/chunk_stamps" />
     <remap from="/multi_map_manager/chunk_data_send" to="/multi_map_manager/chunk_data" />
     <remap from="/multi_map_manager/chunk_stamps_recv" to="/multi_map_manager/chunk_stamps" />
