@@ -131,15 +131,15 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     }
 
     case FINISH: {
-      ROS_INFO_THROTTLE(1.0, "finish exploration.");
+      ROS_ERROR_THROTTLE(1.0, "Drone %d finish exploration.", getId());
       break;
     }
 
     case IDLE: {
       double check_interval = (ros::Time::now() - fd_->last_check_frontier_time_).toSec();
-      if (check_interval > 100.0) {
+      if (check_interval > 3.0) {
         // if (!expl_manager_->updateFrontierStruct(fd_->odom_pos_)) {
-        ROS_WARN("Go back to (0,0,1)");
+        //ROS_WARN("Go back to (0,0,1)");
         // if (getId() == 1) {
         //   expl_manager_->ed_->next_pos_ = Eigen::Vector3d(-3, 1.9, 1);
         // } else
@@ -147,14 +147,18 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         // Eigen::Vector3d dir = (fd_->start_pos_ - fd_->odom_pos_);
         // expl_manager_->ed_->next_yaw_ = atan2(dir[1], dir[0]);
 
-        expl_manager_->ed_->next_pos_ = fd_->start_pos_;
-        expl_manager_->ed_->next_yaw_ = 0.0;
+        //expl_manager_->ed_->next_pos_ = fd_->start_pos_;
+        //expl_manager_->ed_->next_yaw_ = 0.0;
 
-        fd_->go_back_ = true;
-        transitState(PLAN_TRAJ, "FSM");
+        //fd_->go_back_ = true;
+        //transitState(PLAN_TRAJ, "FSM");
         // } else {
         //   fd_->last_check_frontier_time_ = ros::Time::now();
         // }
+        replan_pub_.publish(std_msgs::Empty());
+        clearVisMarker();
+        transitState(FINISH, "FSM");
+        
       }
       break;
     }
@@ -722,7 +726,7 @@ void FastExplorationFSM::droneStateMsgCallback(const exploration_manager::DroneS
 }
 
 void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
-  if (state_ == INIT) return;
+  if (state_ == INIT || state_== FINISH) return;
 
   // Select nearby drone not interacting with recently
   auto& states = expl_manager_->ed_->swarm_state_;
@@ -738,6 +742,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   int select_id2 = -1;
   double max_interval = -1.0;
   double max_interval2 = -1.0;
+  vector<int> selected_ids;
   for (int i = 0; i < states.size(); ++i) {
     if (i + 1 <= getId()) continue;
     // Check if have communication recently
@@ -747,7 +752,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
     if (tn - states[i].stamp_ > 0.2) continue;
     if (tn - states[i].recent_attempt_time_ < fp_->attempt_interval_) continue;
     if (tn - states[i].recent_interact_time_ < fp_->pair_opt_interval_) continue;
-    if (states[i].grid_ids_.size() + state1.grid_ids_.size() == 0) continue;
+    /*if (states[i].grid_ids_.size() + state1.grid_ids_.size() == 0) continue;
 
     double interval = tn - states[i].recent_interact_time_;
     if (interval <= max_interval2) continue;
@@ -763,17 +768,18 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
     // update second best choice 
     select_id2 = i +1;
     max_interval2 = interval;
-    }
+    } */
+    selected_ids.push_back(i+1);
 
   }
-  if (select_id == -1) return;
+  if (selected_ids.empty()) return;
   
-  vector<int> selected_ids;
-  if (select_id2 != -1){
+  
+  /*if (select_id2 != -1){
     selected_ids =  {select_id, select_id2};
   }else{
     selected_ids = {select_id};
-  }
+  } */
   
   //print log
   std::cout << "\nSelected ids:  ";
@@ -821,6 +827,17 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   std::cout << "Missed grid ids: ";
   for (auto id : missed) std::cout << id << ", ";
   std::cout << "" << std::endl;
+  
+  std::cout << "active grid ids: ";
+  for (auto id : actives) std::cout << id << ", ";
+  std::cout << "" << std::endl;
+  
+  // if active and missed grids are empty -> exploration finished
+  if (actives.empty() && missed.empty()){
+     replan_pub_.publish(std_msgs::Empty());
+     clearVisMarker();
+     transitState(FINISH, "FSM");
+  }
   
   // Do partition of the grid
   vector<vector<int>> first_ids, second_ids;
@@ -949,14 +966,14 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   std::cout << "Ego prev  : ";
   for (auto id : state1.grid_ids_) std::cout << id << ", ";
   for (auto droneId : selected_ids){
-    std::cout << "\nOther prev - Drone" << droneId << ": ";
+    std::cout << "\nDrone" << droneId << " prev : ";
     for (auto id : states[droneId-1].grid_ids_) std::cout << id << ", ";
   }
   
   std::cout << "\nEgo new  : ";
   for (auto id : ego_ids) std::cout << id << ", ";
   for (auto droneId : other_ids){
-    std::cout << "\nOther new - Drone" << droneId.first << ": ";
+    std::cout << "\nDrone" << droneId.first << " new : ";
     for (auto id : droneId.second) std::cout << id << ", ";
   }
   std::cout << "" << std::endl;
@@ -984,8 +1001,8 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   }
   std::cout << "cur cost : " << cur_app1 + cur_app2 << std::endl;
   if (cur_app1 + cur_app2 > prev_app1 + prev_app2 + 0.1) {
-    ROS_ERROR("Larger cost after reallocation");
-    if (state_!=WAIT_TRIGGER) {
+    if (state_!=WAIT_TRIGGER && missed.empty()){  // allow larger cost if missed grids are allocated 
+      ROS_ERROR("Larger cost after reallocation");
       return;
     }
   }
@@ -1001,7 +1018,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   }  */
  
   // Update ego and other dominace grids
-  auto last_ids2 = states[select_id-1].grid_ids_;
+  //auto last_ids2 = states[select_id-1].grid_ids_;
 
       
   // send opt resquest to interacting drones
@@ -1076,7 +1093,7 @@ void FastExplorationFSM::optMsgCallback(const exploration_manager::PairOpt2Const
   if (msg->stamp <= expl_manager_->ed_->pair_opt_stamps_[msg->from_drone_id - 1] + 1e-4) return;
   expl_manager_->ed_->pair_opt_stamps_[msg->from_drone_id - 1] = msg->stamp;
 
-  //auto& state1 = expl_manager_->ed_->swarm_state_[msg->from_drone_id - 1];
+  auto& state1 = expl_manager_->ed_->swarm_state_[msg->from_drone_id - 1];
   auto& state2 = expl_manager_->ed_->swarm_state_[getId() - 1];
 
   // auto tn = ros::Time::now().toSec();
@@ -1100,8 +1117,8 @@ void FastExplorationFSM::optMsgCallback(const exploration_manager::PairOpt2Const
     //for (auto id : msg->ego_ids) state1.grid_ids_.push_back(id);
     //for (auto id : msg->other_ids[0].grid_ids) state2.grid_ids_.push_back(id);
 
-    //state1.recent_interact_time_ = msg->stamp;
-    //state2.recent_attempt_time_ = ros::Time::now().toSec();
+    state1.recent_interact_time_ = msg->stamp;
+    state2.recent_attempt_time_ = ros::Time::now().toSec();
     //expl_manager_->ed_->reallocated_ = true;
 
     //if (state_ == IDLE && !state2.grid_ids_.empty()) {
