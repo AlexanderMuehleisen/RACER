@@ -36,6 +36,9 @@ add_message_files(
   PairOptResponse.msg
   HGrid.msg
   GridTour.msg
+  OtherIds.msg
+  PairOpt2.msg
+  MultipleOptConsensus.msg
 )
 
 generate_messages(
