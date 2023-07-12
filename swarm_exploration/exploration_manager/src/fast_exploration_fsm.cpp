@@ -36,6 +36,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/attempt_interval", fp_->attempt_interval_, 0.2);
   nh.param("fsm/pair_opt_interval", fp_->pair_opt_interval_, 1.0);
   nh.param("fsm/repeat_send_num", fp_->repeat_send_num_, 10);
+  nh.param("fsm/attempt_interval_ego", fp_->attempt_interval_ego_, 0.5);
 
   /* Initialize main modules */
   expl_manager_.reset(new FastExplorationManager);
@@ -73,7 +74,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   drone_state_sub_ = nh.subscribe(
       "/swarm_expl/drone_state_recv", 10, &FastExplorationFSM::droneStateMsgCallback, this);
 
-  opt_timer_ = nh.createTimer(ros::Duration(0.5), &FastExplorationFSM::optTimerCallback, this);
+  opt_timer_ = nh.createTimer(ros::Duration(0.05), &FastExplorationFSM::optTimerCallback, this);
   opt_pub_ = nh.advertise<exploration_manager::PairOpt2>("/swarm_expl/pair_opt_send", 10);
   opt_sub_ = nh.subscribe("/swarm_expl/pair_opt_recv", 100, &FastExplorationFSM::optMsgCallback,
       this, ros::TransportHints().tcpNoDelay());
@@ -736,12 +737,12 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   auto tn = ros::Time::now().toSec();
 
   // Avoid frequent attempt
-  if (tn - state1.recent_attempt_time_ < fp_->attempt_interval_) return;
+  if (tn - state1.recent_attempt_time_ < fp_->attempt_interval_ego_) return;
 
-  int select_id = -1;
-  int select_id2 = -1;
-  double max_interval = -1.0;
-  double max_interval2 = -1.0;
+  //int select_id = -1;
+  //int select_id2 = -1;
+  //double max_interval = -1.0;
+  //double max_interval2 = -1.0;
   vector<int> selected_ids;
   for (int i = 0; i < states.size(); ++i) {
     if (i + 1 <= getId()) continue;
@@ -869,96 +870,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   vector<pair<int, vector<int>>> other_ids;
   expl_manager_->allocateGrids2(positions, velocities, first_ids,
       second_ids, opt_ids, ego_ids, other_ids); 
-  
-   /*
-  // Test multiple opt
-  if (select_id2 != -1){
-  ROS_WARN("Case2");
-  selected_ids.push_back(select_id2);
-  
-  // Do multiple optimization with selected drones, allocate the union of their domiance grids
-  unordered_map<int, char> opt_ids_map2;
-  vector<Eigen::Vector3d> positions2, velocities2;
-  vector<vector<int>> first_ids(selected_ids.size()), second_ids(selected_ids.size());
-  
-  // fill vectors drone 1 (ego)
-  positions2.push_back(state1.pos_);
-  velocities2.push_back(Eigen::Vector3d(0, 0,0));
-  for (auto id : state1.grid_ids_) opt_ids_map2[id] = 1; 
-  
-  // fill vectors interacting drones
-  for (auto id : selected_ids) { 
-    positions2.push_back(states[id-1].pos_);
-    velocities2.push_back(Eigen::Vector3d(0,0,0));
-    for (auto id : states[id-1].grid_ids_) opt_ids_map[id] = 1; 
-  }
-  
-  // union of domiance girds of interacting drones
-  vector<int> opt_ids2;
-  for (auto pair : opt_ids_map) opt_ids2.push_back(pair.first);
-  
-
-  //std::cout << "Pair Opt id: ";
-  //for (auto id : opt_ids) std::cout << id << ", ";
-  //std::cout << "" << std::endl;
-
-  // Find missed grids to reallocated them
-  vector<int> actives2, missed2;
-  expl_manager_->hgrid_->getActiveGrids(actives2);
-  findUnallocated(actives2, missed2);
-  //std::cout << "Missed: ";
-  //for (auto id : missed2) std::cout << id << ", ";
-  //std::cout << "" << std::endl;
-  opt_ids2.insert(opt_ids2.end(), missed2.begin(), missed2.end());
-
-  // Do partition of the grid
-  //vector<Eigen::Vector3d> positions2 = { state1.pos_, state2.pos_, state3.pos_ };
-  // vector<Eigen::Vector3d> velocities2 = { Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0,0,0)};
-  //vector<int> first_ids3, second_ids3;
-  
-  // drone 1 (ego)
-  vector<int> first_ids1, second_ids1;
-  if (state_ != WAIT_TRIGGER) {
-    expl_manager_->hgrid_->getConsistentGrid(
-        state1.grid_ids_, state1.grid_ids_, first_ids1, second_ids1);
-  }
-  // other drones
-  vector<int> first_ids2, second_ids2;
-  for (auto id : selected_ids){
-    if (state_ != WAIT_TRIGGER) {
-      expl_manager_->hgrid_->getConsistentGrid(
-        states[id-1].grid_ids_, states[id-1].grid_ids_, first_ids1, second_ids1);
-    }
-    first_ids.push_back(first_ids2);
-    second_ids.push_back(second_ids2);
-    first_ids2.clear();
-    second_ids2.clear();
-  }
    
-
-  //auto t1 = ros::Time::now();
-
-  vector<int> ego_ids2, first_ids3, second_ids3;
-  vector<pair<int, vector<int>>> other_ids2;
-  expl_manager_->allocateGrids2(positions2, velocities2, first_ids,
-      second_ids, opt_ids2, ego_ids2, other_ids2);  
-      
-  // print other_ids2
-  std::cout << "other_ids2: ";
-  for (auto line : other_ids2) {
-     std::cout << "drone_id: " << line.first << "  ";
-     for (auto entry : line.second){
-          std::cout << entry << "  ";
-        }
-        std::cout << std::endl;
-    }    
-  }
-  */
-  
-  
-  
- 
-  
       
   double alloc_time = (ros::Time::now() - t1).toSec();
   
@@ -1040,8 +952,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   for (int i = 0; i < fp_->repeat_send_num_; ++i) opt_pub_.publish(opt2);
   
   
-   
-  
+
 
   // Reserve the result and wait...
   auto ed = expl_manager_->ed_;

@@ -37,7 +37,8 @@ struct FSMParam {
   double replan_time_;  // second
 
   // Swarm
-  double attempt_interval_;   // Min interval of opt attempt
+  double attempt_interval_;   // Min interval of possible opt attempt
+  double attempt_interval_ego_; // Min interval of self initialized opt attempt 
   double pair_opt_interval_;  // Min interval of successful pair opt
   int repeat_send_num_;
 };
