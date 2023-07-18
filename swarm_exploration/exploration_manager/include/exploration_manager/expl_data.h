@@ -40,6 +40,7 @@ struct FSMParam {
   double attempt_interval_;   // Min interval of opt attempt
   double pair_opt_interval_;  // Min interval of successful pair opt
   int repeat_send_num_;
+  double com_loss_distance_; // distance for simulated communication loss
 };
 
 struct DroneState {

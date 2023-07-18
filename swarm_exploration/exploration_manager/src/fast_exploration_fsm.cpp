@@ -34,6 +34,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/attempt_interval", fp_->attempt_interval_, 0.2);
   nh.param("fsm/pair_opt_interval", fp_->pair_opt_interval_, 1.0);
   nh.param("fsm/repeat_send_num", fp_->repeat_send_num_, 10);
+  nh.param("fsm/com_loss_distance", fp_->com_loss_distance_, 6.0);
 
   /* Initialize main modules */
   expl_manager_.reset(new FastExplorationManager);
@@ -699,7 +700,7 @@ void FastExplorationFSM::droneStateMsgCallback(const exploration_manager::DroneS
 
   // Simulate swarm communication loss
   Eigen::Vector3d msg_pos(msg->pos[0], msg->pos[1], msg->pos[2]);
-  // if ((msg_pos - fd_->odom_pos_).norm() > 6.0) return;
+  if ((msg_pos - fd_->odom_pos_).norm() > fp_->com_loss_distance_) return;
 
   auto& drone_state = expl_manager_->ed_->swarm_state_[msg->drone_id - 1];
   if (drone_state.stamp_ + 1e-4 >= msg->stamp) return;  // Avoid unordered msg
