@@ -125,7 +125,7 @@
     <param name="fsm/attempt_interval" value="0.1" type="double"/>
     <param name="fsm/pair_opt_interval" value="0.5" type="double"/>
 
-    <param name="partitioning/min_unknown" value="4000" type="int"/>;
+    <param name="partitioning/min_unknown" value="6000" type="int"/>;
     <param name="partitioning/min_frontier" value="100" type="int"/>;
     <param name="partitioning/min_free" value="3000" type="int"/>;
     <param name="partitioning/consistent_cost" value="-5" type="double"/>;

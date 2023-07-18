@@ -122,15 +122,15 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
     }
 
     case FINISH: {
-      ROS_INFO_THROTTLE(1.0, "finish exploration.");
+      ROS_ERROR_THROTTLE(1.0, "Drone %d finish exploration", getId());
       break;
     }
 
     case IDLE: {
       double check_interval = (ros::Time::now() - fd_->last_check_frontier_time_).toSec();
-      if (check_interval > 100.0) {
+      if (check_interval > 3.0) {
         // if (!expl_manager_->updateFrontierStruct(fd_->odom_pos_)) {
-        ROS_WARN("Go back to (0,0,1)");
+        //ROS_WARN("Go back to (0,0,1)");
         // if (getId() == 1) {
         //   expl_manager_->ed_->next_pos_ = Eigen::Vector3d(-3, 1.9, 1);
         // } else
@@ -138,14 +138,18 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
         // Eigen::Vector3d dir = (fd_->start_pos_ - fd_->odom_pos_);
         // expl_manager_->ed_->next_yaw_ = atan2(dir[1], dir[0]);
 
-        expl_manager_->ed_->next_pos_ = fd_->start_pos_;
-        expl_manager_->ed_->next_yaw_ = 0.0;
+        //expl_manager_->ed_->next_pos_ = fd_->start_pos_;
+        //expl_manager_->ed_->next_yaw_ = 0.0;
 
-        fd_->go_back_ = true;
-        transitState(PLAN_TRAJ, "FSM");
+        //fd_->go_back_ = true;
+        //transitState(PLAN_TRAJ, "FSM");
         // } else {
         //   fd_->last_check_frontier_time_ = ros::Time::now();
         // }
+        
+        replan_pub_.publish(std_msgs::Empty());
+        clearVisMarker();
+        transitState(FINISH, "FSM");
       }
       break;
     }
@@ -812,8 +816,9 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   std::cout << "cur cost : " << cur_app1 << ", " << cur_app2 << ", " << cur_app1 + cur_app2
             << std::endl;
   if (cur_app1 + cur_app2 > prev_app1 + prev_app2 + 0.1) {
-    ROS_ERROR("Larger cost after reallocation");
-    if (state_!=WAIT_TRIGGER) {
+    
+    if (state_!=WAIT_TRIGGER && missed.empty()) {
+      ROS_ERROR("Larger cost after reallocation");
       return;
     }
   }

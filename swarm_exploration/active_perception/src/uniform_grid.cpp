@@ -376,7 +376,8 @@ void UniformGrid::inputFrontiers(const vector<Eigen::Vector3d>& avgs) {
 bool UniformGrid::isRelevant(const GridInfo& grid) {
   // return grid.unknown_num_ >= min_unknown_ || grid.frontier_num_ >= min_frontier_;
   // return grid.unknown_num_ >= min_unknown_ || !grid.frontier_cell_nums_.empty();
-  return grid.unknown_num_ >= min_unknown_ || !grid.contained_frontier_ids_.empty();
+  //return grid.unknown_num_ >= min_unknown_ || !grid.contained_frontier_ids_.empty();
+  return grid.unknown_num_ >= min_unknown_;
 }
 
 void UniformGrid::getCostMatrix(const vector<Eigen::Vector3d>& positions,
