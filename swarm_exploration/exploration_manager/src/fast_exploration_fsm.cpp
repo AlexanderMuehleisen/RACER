@@ -139,7 +139,7 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
     case IDLE: {
       double check_interval = (ros::Time::now() - fd_->last_check_frontier_time_).toSec();
-      if (check_interval > 3.0) {
+      if (check_interval > 8.0) {
         // if (!expl_manager_->updateFrontierStruct(fd_->odom_pos_)) {
         //ROS_WARN("Go back to (0,0,1)");
         // if (getId() == 1) {
@@ -895,7 +895,8 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   std::cout << "" << std::endl;
   
   
-  // Check results, if larger cost after reallocation -> abort
+ // Check results, if larger cost after reallocation -> abort
+  int prev_grid_num = state1.grid_ids_.size();
   double prev_app1 = expl_manager_->computeGridPathCost(state1.pos_, state1.grid_ids_, first_ids[0],
       first_ids, second_ids, true);
   
@@ -903,10 +904,12 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   for (auto iter : other_ids){
     auto drone_id = selected_ids[iter.first -2];
     prev_app2 += expl_manager_->computeGridPathCost(states[drone_id-1].pos_, states[drone_id-1].grid_ids_, first_ids[iter.first-1],
-        first_ids, second_ids, true);    
+        first_ids, second_ids, true); 
+    prev_grid_num += states[drone_id-1].grid_ids_.size();   
   }
-  std::cout << "prev cost: "  << prev_app1 + prev_app2 << std::endl;
+  std::cout << "prev cost: "  << prev_app1 + prev_app2 << " - Grid_num: " << prev_grid_num << std::endl;
   
+  int cur_grid_num = ego_ids.size();
   double cur_app1 = expl_manager_->computeGridPathCost(state1.pos_, ego_ids, first_ids[0],
       first_ids, second_ids, true);
   double cur_app2 = 0.0;
@@ -914,14 +917,20 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
     auto drone_id = selected_ids[iter.first -2];
     cur_app2 += expl_manager_->computeGridPathCost(states[drone_id-1].pos_, iter.second, first_ids[iter.first-1],
        first_ids, second_ids, true);
+    cur_grid_num += iter.second.size();
   }
-  std::cout << "cur cost : " << cur_app1 + cur_app2 << std::endl;
-  if (cur_app1 + cur_app2 > prev_app1 + prev_app2 + 0.1) {
-    if (state_!=WAIT_TRIGGER && missed.empty()){  // allow larger cost if missed grids are allocated 
-      ROS_ERROR("Larger cost after reallocation");
+  std::cout << "cur cost : " << cur_app1 + cur_app2 << " - Grid_num: "<< cur_grid_num << std::endl;
+  
+  
+  if (prev_grid_num != 0 || cur_grid_num != 0){
+    if ((cur_app1 + cur_app2)/cur_grid_num  > (prev_app1 + prev_app2)/prev_grid_num + 0.1) {
+      if (state_!=WAIT_TRIGGER){  
+        ROS_ERROR("Larger cost after reallocation");
       return;
-    }
-  }
+     }
+   }	
+  } 
+  
 
 /* TODO
   if (!state1.grid_ids_.empty() && !ego_ids.empty() &&
