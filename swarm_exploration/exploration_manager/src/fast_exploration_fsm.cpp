@@ -129,7 +129,7 @@ void FastExplorationFSM::FSMCallback(const ros::TimerEvent& e) {
 
     case IDLE: {
       double check_interval = (ros::Time::now() - fd_->last_check_frontier_time_).toSec();
-      if (check_interval > 3.0) {
+      if (check_interval > 8.0) {
         // if (!expl_manager_->updateFrontierStruct(fd_->odom_pos_)) {
         //ROS_WARN("Go back to (0,0,1)");
         // if (getId() == 1) {
@@ -718,7 +718,7 @@ void FastExplorationFSM::droneStateMsgCallback(const exploration_manager::DroneS
 }
 
 void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
-  if (state_ == INIT) return;
+  if (state_ == INIT && state_ == FINISH) return;
 
   // Select nearby drone not interacting with recently
   auto& states = expl_manager_->ed_->swarm_state_;
@@ -804,24 +804,28 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   std::cout << "" << std::endl;
 
   // Check results
+  double prev_grid_num = state1.grid_ids_.size() + state2.grid_ids_.size();
   double prev_app1 = expl_manager_->computeGridPathCost(state1.pos_, state1.grid_ids_, first_ids1,
       { first_ids1, first_ids2 }, { second_ids1, second_ids2 }, true);
   double prev_app2 = expl_manager_->computeGridPathCost(state2.pos_, state2.grid_ids_, first_ids2,
       { first_ids1, first_ids2 }, { second_ids1, second_ids2 }, true);
   std::cout << "prev cost: " << prev_app1 << ", " << prev_app2 << ", " << prev_app1 + prev_app2
             << std::endl;
+  double cur_grid_num = ego_ids.size() + other_ids.size();
   double cur_app1 = expl_manager_->computeGridPathCost(state1.pos_, ego_ids, first_ids1,
       { first_ids1, first_ids2 }, { second_ids1, second_ids2 }, true);
   double cur_app2 = expl_manager_->computeGridPathCost(state2.pos_, other_ids, first_ids2,
       { first_ids1, first_ids2 }, { second_ids1, second_ids2 }, true);
   std::cout << "cur cost : " << cur_app1 << ", " << cur_app2 << ", " << cur_app1 + cur_app2
             << std::endl;
-  if (cur_app1 + cur_app2 > prev_app1 + prev_app2 + 0.1) {
-    
-    if (state_!=WAIT_TRIGGER && missed.empty()) {
-      ROS_ERROR("Larger cost after reallocation");
-      return;
+  
+  if (prev_grid_num !=0 || cur_grid_num != 0){
+   if ((cur_app1 + cur_app2)/ cur_grid_num > (prev_app1 + prev_app2)/prev_grid_num + 0.1) {   
+     if (state_!=WAIT_TRIGGER) {
+       ROS_ERROR("Larger cost after reallocation");
+       return;
     }
+   }
   }
 
   if (!state1.grid_ids_.empty() && !ego_ids.empty() &&
