@@ -126,8 +126,8 @@
     <param name="fsm/com_loss_distance" value="1000.0" type="double" />
     
 
-    <param name="fsm/attempt_interval" value="0.2" type="double"/>
-    <param name="fsm/attempt_interval_ego" value="0.5" type="double"/>
+    <param name="fsm/attempt_interval" value="0.1" type="double"/>
+    <param name="fsm/attempt_interval_ego" value="1.0" type="double"/>
     <param name="fsm/pair_opt_interval" value="0.0" type="double"/>
     
     <param name="partitioning/min_unknown" value="5000" type="int"/>;

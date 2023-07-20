@@ -1043,11 +1043,11 @@ void FastExplorationManager::allocateGrids2(const vector<Eigen::Vector3d>& posit
   }
   
   // Print tour ids
-  for (auto tr : tours) {
-    std::cout << "tour: ";
-    for (auto id : tr) std::cout << id << ", ";
-    std::cout << "" << std::endl;
-  } 
+  //for (auto tr : tours) {
+  //  std::cout << "tour: ";
+  //  for (auto id : tr) std::cout << id << ", ";
+  //  std::cout << "" << std::endl;
+  //} 
   
   int drone_id;
   vector<int> route;

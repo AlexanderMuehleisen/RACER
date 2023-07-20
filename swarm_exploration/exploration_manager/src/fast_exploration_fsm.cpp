@@ -700,7 +700,16 @@ void FastExplorationFSM::droneStateTimerCallback(const ros::TimerEvent& e) {
   for (auto id : state.grid_ids_) msg.grid_ids.push_back(id);
   msg.recent_attempt_time = state.recent_attempt_time_;
   msg.stamp = state.stamp_;
-
+  
+  // get droneIds with valid communication
+  auto tn = ros::Time::now().toSec();
+  auto& states = expl_manager_->ed_->swarm_state_;
+  for (int i = 0; i < states.size(); ++i) {
+    if (i + 1 == getId()) continue;
+    if (tn - states[i].stamp_ > 0.2) continue;
+    msg.connection_ids.push_back(i+1);
+  }
+ 
   drone_state_pub_.publish(msg);
 }
 
@@ -725,6 +734,7 @@ void FastExplorationFSM::droneStateMsgCallback(const exploration_manager::DroneS
   for (auto id : msg->grid_ids) drone_state.grid_ids_.push_back(id);
   drone_state.stamp_ = msg->stamp;
   drone_state.recent_attempt_time_ = msg->recent_attempt_time;
+  for (auto id : msg->connection_ids) drone_state.connection_ids_.push_back(id);
 
   // std::cout << "Drone " << getId() << " get drone " << int(msg->drone_id) << "'s state" <<
   // std::endl; std::cout << drone_state.pos_.transpose() << std::endl;
@@ -749,7 +759,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   //double max_interval2 = -1.0;
   vector<int> selected_ids;
   for (int i = 0; i < states.size(); ++i) {
-    if (i + 1 <= getId()) continue;
+    if (i + 1 == getId()) continue;
     // Check if have communication recently
     // or the drone just experience another opt
     // or the drone is interacted with recently /* !urgent &&  */
@@ -964,6 +974,8 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   
   for (int i = 0; i < fp_->repeat_send_num_; ++i) opt_pub_.publish(opt2);
   
+  // 
+  
   
 
 
@@ -1081,6 +1093,7 @@ void FastExplorationFSM::optResMsgCallback(
   //check if all interacting drones respond with true (valid opt)
   if (ed-> selected_ids_.size() == ed-> multiple_opt_consensus_.size()){
      ROS_WARN("All drones respond with valid marker -> reallocate grid cells");
+     std::cout << "All drones respond with valid marker" << std::endl;
      
      // reset wait_respod and multiple_opt_consensus
      ed->wait_response_ = false;

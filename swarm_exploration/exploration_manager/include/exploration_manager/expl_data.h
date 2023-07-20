@@ -53,6 +53,7 @@ struct DroneState {
 
   vector<int> grid_ids_;         // Id of grid tour
   double recent_interact_time_;  // Stamp of latest opt with this drone
+  vector<int> connection_ids_;   // DroneIds with which connection is possible
 };
 
 struct ExplorationData {
