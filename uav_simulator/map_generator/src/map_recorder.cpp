@@ -12,7 +12,7 @@ bool finish = false;
 void cloudCallback(const sensor_msgs::PointCloud2& msg) {
   pcl::PointCloud<pcl::PointXYZ> cloud;
   pcl::fromROSMsg(msg, cloud);
-  pcl::io::savePCDFileASCII("/home/boboyu/Downloads/tmp.pcd", cloud);
+  pcl::io::savePCDFileASCII("/home/alexander/Downloads/tmp.pcd", cloud);
 
   cout << "map saved." << endl;
   finish = true;
