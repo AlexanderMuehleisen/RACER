@@ -37,6 +37,7 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   nh.param("fsm/pair_opt_interval", fp_->pair_opt_interval_, 1.0);
   nh.param("fsm/repeat_send_num", fp_->repeat_send_num_, 10);
   nh.param("fsm/attempt_interval_ego", fp_->attempt_interval_ego_, 0.5);
+  nh.param("fsm/attempt_interval_best_can", fp_->attempt_interval_best_can_, 0.5);
   nh.param("fsm/com_loss_distance", fp_->com_loss_distance_, 6.0);
 
   /* Initialize main modules */
@@ -53,8 +54,11 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   fd_->trigger_ = false;
   fd_->avoid_collision_ = false;
   fd_->go_back_ = false;
-  
-  expl_manager_->ed_->best_candidate_ = false;
+  if (getId() == 1){
+    expl_manager_->ed_->best_candidate_ = true;
+  }else{
+    expl_manager_->ed_->best_candidate_ = false;
+  }
 
   /* Ros sub, pub and timer */
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &FastExplorationFSM::FSMCallback, this);
@@ -754,7 +758,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
 
   // Avoid frequent attempt
   if (expl_manager_->ed_->best_candidate_){
-    if (tn - state1.recent_attempt_time_ < 0.2) return;
+    if (tn - state1.recent_attempt_time_ < fp_->attempt_interval_best_can_) return;
     ROS_WARN("Best Candidate opt attempt");
   }else{
     if (tn - state1.recent_attempt_time_ < fp_->attempt_interval_ego_) return;
