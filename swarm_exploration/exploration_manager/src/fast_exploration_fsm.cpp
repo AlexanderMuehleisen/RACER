@@ -749,7 +749,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   //double max_interval2 = -1.0;
   vector<int> selected_ids;
   for (int i = 0; i < states.size(); ++i) {
-    if (i + 1 <= getId()) continue;
+    if (i + 1 == getId()) continue;
     // Check if have communication recently
     // or the drone just experience another opt
     // or the drone is interacted with recently /* !urgent &&  */
