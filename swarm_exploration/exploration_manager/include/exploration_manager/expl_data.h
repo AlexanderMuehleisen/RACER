@@ -93,7 +93,8 @@ struct ExplorationData {
   vector<bool> multiple_opt_consensus_;
   vector<int> selected_ids_;
   double pair_opt_stamp_;
-  bool reallocated_, wait_response_;
+  int next_best_candidate_;
+  bool reallocated_, wait_response_, best_candidate_;
 
   // Coverage planning
   vector<Vector3d> grid_tour_, grid_tour2_;

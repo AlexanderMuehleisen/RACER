@@ -58,6 +58,7 @@ private:
   void clearVisMarker();
   int getId();
   void findUnallocated(const vector<int>& actives, vector<int>& missed);
+  int compareConnection(const vector<int>& vec1, const vector<int>& vec2);
 
   /* ROS functions */
   void FSMCallback(const ros::TimerEvent& e);

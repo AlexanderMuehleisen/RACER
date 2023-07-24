@@ -53,6 +53,8 @@ void FastExplorationFSM::init(ros::NodeHandle& nh) {
   fd_->trigger_ = false;
   fd_->avoid_collision_ = false;
   fd_->go_back_ = false;
+  
+  expl_manager_->ed_->best_candidate_ = false;
 
   /* Ros sub, pub and timer */
   exec_timer_ = nh.createTimer(ros::Duration(0.01), &FastExplorationFSM::FSMCallback, this);
@@ -751,12 +753,13 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   auto tn = ros::Time::now().toSec();
 
   // Avoid frequent attempt
-  if (tn - state1.recent_attempt_time_ < fp_->attempt_interval_ego_) return;
-
-  //int select_id = -1;
-  //int select_id2 = -1;
-  //double max_interval = -1.0;
-  //double max_interval2 = -1.0;
+  if (expl_manager_->ed_->best_candidate_){
+    if (tn - state1.recent_attempt_time_ < 0.2) return;
+    ROS_WARN("Best Candidate opt attempt");
+  }else{
+    if (tn - state1.recent_attempt_time_ < fp_->attempt_interval_ego_) return;
+  }
+  
   vector<int> selected_ids;
   for (int i = 0; i < states.size(); ++i) {
     if (i + 1 == getId()) continue;
@@ -767,36 +770,15 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
     if (tn - states[i].stamp_ > 0.2) continue;
     if (tn - states[i].recent_attempt_time_ < fp_->attempt_interval_) continue;
     if (tn - states[i].recent_interact_time_ < fp_->pair_opt_interval_) continue;
-    /*if (states[i].grid_ids_.size() + state1.grid_ids_.size() == 0) continue;
-
-    double interval = tn - states[i].recent_interact_time_;
-    if (interval <= max_interval2) continue;
-    
-    if (interval >= max_interval){
-    // update best choice and set previously best choice to second best 
-    select_id2 = select_id;
-    max_interval2 = max_interval;
-    
-    select_id = i + 1;
-    max_interval = interval;
-    } else {
-    // update second best choice 
-    select_id2 = i +1;
-    max_interval2 = interval;
-    } */
+ 
     selected_ids.push_back(i+1);
 
   }
   if (selected_ids.empty()) return;
   
   
-  /*if (select_id2 != -1){
-    selected_ids =  {select_id, select_id2};
-  }else{
-    selected_ids = {select_id};
-  } */
-  
   //print log
+  if (expl_manager_->ed_->best_candidate_) std::cout << "Best candidate opt attempt" << std::endl;
   std::cout << "\nSelected ids:  ";
   for (auto id : selected_ids){
     std::cout << id << ", ";
@@ -954,6 +936,24 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
  
   // Update ego and other dominace grids
   //auto last_ids2 = states[select_id-1].grid_ids_;
+  
+  
+  // suggest a good candidate for next multiple opt
+  int count, best_candidate = -1, max_count = 0;
+  for (auto id : selected_ids){
+    auto currentConnection = states[id-1].connection_ids_;
+    count = FastExplorationFSM::compareConnection(selected_ids, currentConnection);
+    if (count > max_count){
+      best_candidate = id;
+      max_count = count;
+    }
+  }
+  
+  if (best_candidate != -1){
+    std::cout << "Best candidate is drone " << best_candidate << std::endl;
+  }
+  
+  
 
       
   // send opt resquest to interacting drones
@@ -974,13 +974,10 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   
   for (int i = 0; i < fp_->repeat_send_num_; ++i) opt_pub_.publish(opt2);
   
-  // 
   
-  
-
-
   // Reserve the result and wait...
   auto ed = expl_manager_->ed_;
+  //ed->best_candidate_ = false; 
   ed->ego_ids_ = ego_ids;
   ed->other_ids_ = other_ids[0].second;
   ed ->other_ids2_ = other_ids;
@@ -988,6 +985,7 @@ void FastExplorationFSM::optTimerCallback(const ros::TimerEvent& e) {
   ed->wait_response_ = true;
   ed->selected_ids_ = selected_ids;
   state1.recent_attempt_time_ = tn;
+  ed->next_best_candidate_=  best_candidate;
   
   
 }
@@ -1098,10 +1096,12 @@ void FastExplorationFSM::optResMsgCallback(
      // reset wait_respod and multiple_opt_consensus
      ed->wait_response_ = false;
      ed->multiple_opt_consensus_.clear();
+     ed->best_candidate_ = false;
      
      // send new grid allocation to drones 
      exploration_manager::MultipleOptConsensus opt;
      opt.from_drone_id = getId();
+     opt.next_best_candidate = ed->next_best_candidate_;
      for (auto id : ed->selected_ids_) opt.to_drone_ids.push_back(id);
      opt.stamp = ros::Time::now().toSec();
      for (auto id : ed->ego_ids_) opt.ego_ids.push_back(id);
@@ -1150,7 +1150,7 @@ void FastExplorationFSM::optConsensusMsgCallback(
   ed->multiple_opt_consensus_stamps_[msg->from_drone_id - 1] = msg->stamp;
   
   // Update states/grid allocation
-  ROS_WARN("Drone %d update allocation send by %d", getId(), msg->from_drone_id);
+  //ROS_WARN("Drone %d update allocation send by %d", getId(), msg->from_drone_id);
   auto& state1 = ed->swarm_state_[msg->from_drone_id - 1];
   state1.grid_ids_.clear();
   for (auto id : msg->ego_ids) state1.grid_ids_.push_back(id);
@@ -1163,7 +1163,11 @@ void FastExplorationFSM::optConsensusMsgCallback(
    for (auto id : iter.grid_ids) state2.grid_ids_.push_back(id);
    state2.recent_attempt_time_ = tn;
   }
-
+  
+  // check if drone is next_best_candidate
+  if (msg->next_best_candidate == getId()) ed->best_candidate_ = true;
+  
+  
   ed->reallocated_ = true;
   if (state_ == IDLE && !ed->swarm_state_[getId()-1].grid_ids_.empty()) {
    transitState(PLAN_TRAJ, "optMsgCallback");
@@ -1256,5 +1260,21 @@ void FastExplorationFSM::swarmTrajTimerCallback(const ros::TimerEvent& e) {
     swarm_traj_pub_.publish(bspline);
   }
 }
+
+int FastExplorationFSM::compareConnection(const vector<int>& vec1, const vector<int>& vec2) {
+  // function checks which elements in vec2 does not exist in vec1. Used to determine a good 
+  // candidate for the next multiple opt.
+  
+  vector<int> tempVec = vec2;
+  for (const int& num : vec1) {
+    auto it = std::find(tempVec.begin(), tempVec.end(), num);
+    if (it != tempVec.end()) {
+      tempVec.erase(it);
+    }
+  }
+  
+  return tempVec.size();  
+}
+
 
 }  // namespace fast_planner
